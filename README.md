@@ -22,5 +22,5 @@ clone and cd to this repository, then
 pick `remote-browser-server.exe` and `remote-browser-client`
 
 ## TODO:
-- [] password encryption
-- [] an easy way to register server app as default browser
+- [ ] password encryption
+- [ ] an easy way to register server app as default browser
