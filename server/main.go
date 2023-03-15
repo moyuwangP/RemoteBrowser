@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"server/utils"
 	"strings"
 )
 
@@ -29,7 +30,7 @@ func main() {
 		option := args[1]
 		switch option {
 		case "-r":
-			reg()
+			utils.Reg()
 		case "-d":
 			daemon(args[2:])
 		case "-s":
@@ -39,19 +40,15 @@ func main() {
 
 }
 
-func reg() {
-
-}
-
 type ip struct {
 	ip string
 }
 
 func daemon(args []string) {
 	udpAddr, err := net.ResolveUDPAddr("udp", daemonListenAddress)
-	panicIfNeeded(err)
+	utils.PanicIfNeeded(err)
 	udpConn, err := net.ListenUDP("udp", udpAddr)
-	panicIfNeeded(err)
+	utils.PanicIfNeeded(err)
 	defer udpConn.Close()
 	fmt.Println("daemon created")
 
@@ -61,11 +58,11 @@ func daemon(args []string) {
 	for {
 		lenBuf := make([]byte, 4)
 		_, err := io.ReadAtLeast(udpConn, lenBuf, 4)
-		panicIfNeeded(err)
+		utils.PanicIfNeeded(err)
 		urlSize := int(binary.LittleEndian.Uint32(lenBuf))
 		buf := make([]byte, urlSize)
 		_, err = io.ReadAtLeast(udpConn, buf, urlSize)
-		panicIfNeeded(err)
+		utils.PanicIfNeeded(err)
 
 		if clientIp.ip != "" {
 			send([]string{string(buf)}, fmt.Sprintf("%s:%d", clientIp.ip, clientPort))
@@ -76,13 +73,13 @@ func daemon(args []string) {
 
 func listenClientIpChanges(ip *ip) {
 	conn, err := net.ListenPacket("udp", fmt.Sprintf(":%d", heartbeatPort))
-	panicIfNeeded(err)
+	utils.PanicIfNeeded(err)
 	defer conn.Close()
 
 	buffer := make([]byte, 1)
 	for {
 		_, addr, err := conn.ReadFrom(buffer)
-		panicIfNeeded(err)
+		utils.PanicIfNeeded(err)
 		incomingIp := extractIp(addr.String())
 		if incomingIp != ip.ip {
 			ip.ip = incomingIp
@@ -107,7 +104,7 @@ func send(args []string, dest string) {
 	url := args[0]
 
 	conn, err := net.Dial("udp", dest)
-	panicIfNeeded(err)
+	utils.PanicIfNeeded(err)
 	bytes := []byte(url)
 	defer conn.Close()
 	conn.Write(intToBytes(len(bytes)))
@@ -118,10 +115,4 @@ func intToBytes(i int) []byte {
 	bs := make([]byte, 4)
 	binary.LittleEndian.PutUint32(bs, uint32(i))
 	return bs
-}
-
-func panicIfNeeded(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
